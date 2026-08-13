@@ -1,0 +1,32 @@
+2026-08-13
+- 解決長影片轉錄爆顯存 (CUDA Out of Memory) 問題：將 `src/transcribe_local.py` 預設計算精度調整為顯存友善之 `int8_float16`（顯存佔用降低 50%），並加入 `transcribe()` 執行期間捕捉 OOM 異常自動清理顯存並降級重試之安全機制。
+- 新增 `.gitignore` 排除清單，排除 `*.mp4`, `*.srt`, `*.str`, `*.html`, `*.md` 等媒體與產出檔案，並透過 `!README.md` 白名單例外保留 `README.md` 文件。
+
+
+2026-08-12
+- 新增 `run_transcribe.ps1` 原生 PowerShell 轉錄腳本，並修正 `run_transcribe.bat` 中 cmd `if (...)` 括號區塊解析 UTF-8 多位元組字元引發的 command 誤判 Bug。預設處理 `D:\Temp\2026_08_12_19_03_14_462.mp4`。
+
+
+2026-07-24
+- 完成 `data/output/0723顧問交流會.srt` 全檔 14,009 行「14 分段語境精準校稿」（非盲目字串置換）。依據會議前後文，識別二合遊戲專有名詞（Gossip Harbor、Travel Town 諧音變體如 Ghost Helper / 穿過趟 / 超貨套 等）、棋盤/棋子/生成器/機型確認/留存數據/無盡挑戰/限時活動等語意，並妥善保留非術語之日常口語對話。
+- 建立原始檔完整備份 `data/output/0723顧問交流會_raw.srt`。
+- 擴充 `專有名詞對照庫.md` 新增「G. 0723 二合遊戲顧問交流會專有名詞與錯字對照」章節。
+- 提供 `scratch/split_chunks.py` 與 `scratch/do_contextual_proofread.py` 供自動化分段處理。
+
+2026-07-14
+- 新增 `activate.bat` 批次檔，以 Bypass 模式啟動 PowerShell 並載入虛擬環境，解決 Windows 系統安全性限制 (Execution Policy) 導致無法直接執行 `.venv\Scripts\Activate.ps1` 的問題。
+
+2026-07-03
+- 修正地端轉錄 (transcribe_local.py) 的 VAD 設定，預設改為啟用。並引入了極度寬鬆且穩定的 `VadOptions` 參數（降低 threshold 到 0.35 以提升聲音靈敏度防漏字，加入 speech_pad_ms=400 防止切掉字首尾，且只在大於 1 秒的靜音才進行切分），完美平衡「防止無聲卡死」與「防止停頓斷字」的兩難。同時提供 `--no_vad` 用於手動停用。
+- 修正地端轉錄 (transcribe_local.py) 中 `vad_filter` 被硬編碼為 `True` 的 Bug，使其能真正遵循命令行傳入的 `False` 參數關閉 VAD，徹底排除 VAD 誤判導致的轉錄截斷問題。
+- 撰寫 README.md 說明文件，提供專案打包搬遷至新 GPU 機器 (如 RTX 5060 Ti) 的系統依賴準備、環境重新建立與完整操作指南。
+- 為本地 ASR (transcribe_local.py) 與自我測試 (test_workflow.py) 加入計算精度自適應與降級 (fallback) 機制。當 GPU 不支援 float16 (例如 Pascal 架構 sales 的 GTX 1050) 時，會自動降級使用 int8_float16 或 float32，避免載入失敗。
+- 修正 setup.ps1 由於中文字元編碼造成的 Windows PowerShell 解析語法錯誤，將其提示訊息全數改為 ASCII 英文字元。
+- 初始化專案目錄結構。
+- 建立 requirements.txt 檔案，列出 ASR 核心相依套件 (faster-whisper, ffmpeg-python, google-genai)。
+- 建立 setup.ps1 與 setup.sh，自動化部署 CUDA 12.1 支援的 PyTorch 與相依套件環境。
+- 建立 src/utils/media_utils.py 工具模組，處理音訊抽離與 SRT 字幕格式輸出。
+- 建立 src/transcribe_local.py 本地 Whisper 轉錄腳本，針對遠端高階顯卡 (5060 Ti) 預設為 large-v3 + float16，並提供 1050 Ti 量化運行提示。
+- 建立 src/transcribe_api.py 雲端轉錄腳本，透過 Gemini API 的 File API 處理長音訊轉錄並自動生成 SRT。
+- 建立 burn_subtitles.bat 字幕燒錄批次檔，整合中文字型 (Microsoft JhengHei) 與防亂碼設定。
+- 建立 src/test_workflow.py 用於環境相依性自我測試。

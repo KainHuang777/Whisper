@@ -1,0 +1,8 @@
+# PyTorch 與 CUDA 支援 (建議透過 setup.ps1/setup.sh 自動安裝對應 CUDA 的版本)
+# 這裡列出基礎相依套件
+
+faster-whisper>=1.0.3
+ffmpeg-python>=0.2.0
+google-genai>=0.1.1
+tqdm>=4.66.0
+pydantic>=2.0.0

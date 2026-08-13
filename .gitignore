@@ -1,0 +1,23 @@
+# 虛擬環境與系統快取
+.venv/
+__pycache__/
+*.pyc
+.DS_Store
+
+# 媒體、字幕與產出資料檔案
+*.mp4
+*.mkv
+*.avi
+*.mov
+*.wav
+*.srt
+*.str
+*.html
+*.xlsm
+data/audio/
+data/output/
+
+# 排除所有 Markdown 文件，但白名單例外保留 README.md
+*.md
+!README.md
+!readme.md
