@@ -1,3 +1,27 @@
+2026-10-16
+- **Update .gitignore to Ignore Additional Media Formats & Input Directories**:
+  - Added `*.m4a` to ignored audio file extensions.
+  - Added `data/input/` to prevent untracked local audio sources from being committed.
+- **Fix Windows Batch Parsing Issue in run_tts.bat**:
+  - Refactored `run_tts.bat` to replace `if-else` parentheses blocks with `goto` labels to prevent UTF-8 Chinese byte collisions with ASCII closing parenthesis `)`.
+  - Fixed Windows path backslash formatting for python script invocation.
+  - Escaped percent `%` signs to `%%` in `argparse` help strings in `src/tts_service.py` to prevent `ValueError: unsupported format character`.
+
+2026-10-15
+- **Interactive Console Interface & Multi-Voice Support for Edge TTS**:
+  - Implemented interactive console CLI (`interactive_mode()`) in `src/tts_service.py` with multi-step guided workflows.
+  - Added support for direct multiline text paste and reading from external text files (`.txt`) with multi-encoding fallback (`utf-8`, `utf-8-sig`, `cp950`, `gbk`).
+  - Added built-in voice selection menu featuring Taiwanese natural female voices (`zh-TW-HsiaoChenNeural`, `zh-TW-HsiaoYuNeural`), popular narrator male voices (`zh-CN-YunxiNeural`, `zh-CN-YunjianNeural`), and custom voice input.
+  - Added custom output filename support with timestamped fallback under `data/output/`.
+  - Implemented automatic long-text chunking (`split_text_into_chunks`) by punctuation and seamless audio stream concatenation to bypass Microsoft Edge connection timeout limits.
+  - Updated `run_tts.bat` and `run_tts.ps1` to launch interactive mode by default when executed without arguments.
+
+2026-10-15
+- **Fix UnboundLocalError in write_srt for Empty Audio Segments**:
+  - In `src/utils/media_utils.py`: Initialized `count = 0` before enumerating segments in `write_srt()`.
+  - Resolved `UnboundLocalError: local variable 'idx' referenced before assignment` occurring when transcription results contain no detected speech segments (empty list).
+  - Added clean empty subtitle handling with informational log message when segment count is 0.
+
 2026-10-15
 - **更新專案文件 README.md**：
   - 詳盡增補「跨機器環境遷移與安裝指南」：強調切勿複製 `.venv` 之底層成因，提供標準新機器一鍵安裝指令與離線 wheel 打包技巧。

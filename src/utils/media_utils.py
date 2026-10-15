@@ -99,8 +99,10 @@ def write_srt(segments, srt_path: str):
     os.makedirs(os.path.dirname(srt_path), exist_ok=True)
     print(f"[字幕生成] 正在寫入 SRT 字幕檔: {srt_path} ...")
     
+    count = 0
     with open(srt_path, "w", encoding="utf-8") as f:
         for idx, segment in enumerate(segments, start=1):
+            count = idx
             start_str = format_timestamp(segment.start)
             end_str = format_timestamp(segment.end)
             text = segment.text.strip()
@@ -110,4 +112,8 @@ def write_srt(segments, srt_path: str):
             f.write(f"{start_str} --> {end_str}\n")
             f.write(f"{text}\n\n")
             
-    print(f"[字幕生成] 字幕寫入完成！共 {idx} 段字幕。")
+    if count == 0:
+        print(f"[字幕生成] 字幕寫入完成！共 0 段字幕（未偵測到有效人聲語音）。")
+    else:
+        print(f"[字幕生成] 字幕寫入完成！共 {count} 段字幕。")
+

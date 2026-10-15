@@ -11,11 +11,13 @@ __pycache__/
 *.avi
 *.mov
 *.wav
+*.m4a
 *.srt
 *.str
 *.html
 *.xlsm
 data/audio/
+data/input/
 data/output/
 
 # 排除所有 Markdown 文件，但白名單例外保留 README.md

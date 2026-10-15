@@ -1,20 +1,18 @@
 # Edge TTS 語音合成 PowerShell 腳本
 param(
-    [string]$Text = "歡迎使用 Edge TTS 語音合成服務，這是一段繁體中文示範音訊。",
-    [string]$OutputFile = "data/output/tts_demo.mp3",
-    [string]$Voice = "zh-TW-HsiaoChenNeural",
+    [string]$Text,
+    [string]$File,
+    [string]$OutputFile,
+    [string]$Voice,
     [string]$Rate = "+0%",
     [string]$Pitch = "+0Hz",
+    [switch]$Interactive,
     [switch]$ListVoices
 )
 
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 if (-not $ScriptDir) { $ScriptDir = Get-Location }
 Set-Location $ScriptDir
-
-Write-Host "==================================================" -ForegroundColor Cyan
-Write-Host "  Whisper 專案 - Edge TTS 語音合成作業" -ForegroundColor Cyan
-Write-Host "==================================================" -ForegroundColor Cyan
 
 $PythonExe = "$ScriptDir\.venv\Scripts\python.exe"
 
@@ -25,17 +23,27 @@ if (-not (Test-Path $PythonExe)) {
 
 if ($ListVoices) {
     & $PythonExe "$ScriptDir\src\tts_service.py" --list-voices
+} elseif ($Interactive -or (-not $Text -and -not $File)) {
+    # 預設無參數時啟動互動模式
+    & $PythonExe "$ScriptDir\src\tts_service.py" --interactive
 } else {
-    Write-Host "目標文字: $Text" -ForegroundColor Yellow
-    Write-Host "目標音色: $Voice" -ForegroundColor Yellow
-    Write-Host "輸出檔案: $OutputFile" -ForegroundColor Yellow
-    Write-Host "--------------------------------------------------" -ForegroundColor Cyan
+    Write-Host "==================================================" -ForegroundColor Cyan
+    Write-Host "  Whisper 專案 - Edge TTS 語音合成作業" -ForegroundColor Cyan
+    Write-Host "==================================================" -ForegroundColor Cyan
 
-    & $PythonExe "$ScriptDir\src\tts_service.py" --text "$Text" --output "$OutputFile" --voice "$Voice" --rate "$Rate" --pitch "$Pitch"
-}
+    $argsList = @()
+    if ($Text) { $argsList += @("--text", $Text) }
+    if ($File) { $argsList += @("--file", $File) }
+    if ($OutputFile) { $argsList += @("--output", $OutputFile) }
+    if ($Voice) { $argsList += @("--voice", $Voice) }
+    if ($Rate) { $argsList += @("--rate", $Rate) }
+    if ($Pitch) { $argsList += @("--pitch", $Pitch) }
 
-if ($LASTEXITCODE -eq 0) {
-    Write-Host "`n[成功] TTS 作業順利完成！" -ForegroundColor Green
-} else {
-    Write-Host "`n[錯誤] TTS 過程發生異常，請檢查上方的錯誤訊息。" -ForegroundColor Red
+    & $PythonExe "$ScriptDir\src\tts_service.py" @argsList
+
+    if ($LASTEXITCODE -eq 0) {
+        Write-Host "`n[成功] TTS 作業順利完成！" -ForegroundColor Green
+    } else {
+        Write-Host "`n[錯誤] TTS 過程發生異常，請檢查上方的錯誤訊息。" -ForegroundColor Red
+    }
 }
