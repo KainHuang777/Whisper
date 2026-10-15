@@ -180,14 +180,14 @@ if __name__ == "__main__":
         output_dir = os.path.join(base_dir, "data", "output")
         os.makedirs(input_dir, exist_ok=True)
         
-        video_exts = (".mp4", ".mkv", ".avi", ".mov")
+        media_exts = (".mp4", ".mkv", ".avi", ".mov", ".mp3", ".wav", ".m4a", ".aac", ".flac", ".ogg")
         
-        def pick_unprocessed_video(source_dir, source_name):
-            """從指定目錄中挑選尚未產出 .srt 字幕的影片"""
+        def pick_unprocessed_media(source_dir, source_name):
+            """從指定目錄中挑選尚未產出 .srt 字幕的媒體檔案 (音訊/影片)"""
             candidates = []
             skipped = 0
             for f in os.listdir(source_dir):
-                if f.lower().endswith(video_exts):
+                if f.lower().endswith(media_exts):
                     name = os.path.splitext(f)[0]
                     srt = os.path.join(output_dir, f"{name}.srt")
                     if os.path.exists(srt):
@@ -195,22 +195,22 @@ if __name__ == "__main__":
                     else:
                         candidates.append(os.path.join(source_dir, f))
             if skipped > 0:
-                print(f"[提示] 跳過 {skipped} 個已處理影片（{source_name} 中 .srt 已存在）")
+                print(f"[提示] 跳過 {skipped} 個已處理檔案（{source_name} 中 .srt 已存在）")
             return candidates
         
-        videos = pick_unprocessed_video(input_dir, "data/input")
+        media_files = pick_unprocessed_media(input_dir, "data/input")
         source = "輸入資料夾"
         
-        if not videos:
-            videos = pick_unprocessed_video(base_dir, "根目錄")
+        if not media_files:
+            media_files = pick_unprocessed_media(base_dir, "根目錄")
             source = "根目錄"
         
-        if videos:
-            selected_video = videos[0]
-            print(f"[提示] 未指定影片，自動選擇{source}中的影片: {selected_video}")
-            args.video = selected_video
+        if media_files:
+            selected_media = media_files[0]
+            print(f"[提示] 未指定媒體檔案，自動選擇{source}中的檔案: {selected_media}")
+            args.video = selected_media
         else:
-            print(f"[錯誤] 沒有尚未處理的影片。請使用 --video 參數指定影片，或將影片放入 data/input/ 中。")
+            print(f"[錯誤] 沒有尚未處理的音訊或影片檔案。請使用 --video 參數指定檔案，或將檔案放入 data/input/ 中。")
             parser.print_help()
             exit(1)
                 

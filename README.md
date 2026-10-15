@@ -1,135 +1,182 @@
-# Whisper 語音轉文字與自動字幕生成專案
+# Whisper 語音辨識與 Edge TTS 語音合成專案
 
-本專案支援將影片自動抽取音訊、透過地端 GPU (Whisper `large-v3`) 或雲端 API (Gemini API) 進行繁體中文語音轉文字並輸出 `.srt` 字幕，最後使用 FFmpeg 將字幕高品質燒錄至影片下方。
+本專案提供端到端的高效語音處理工作流程：
+1. **語音辨識 (STT)**：支援將影音自動抽取音訊，透過地端 GPU (Whisper `large-v3`) 或雲端 API (Gemini API) 進行繁體中文語音轉文字並輸出 `.srt` 字幕，支援使用 FFmpeg 將字幕高品質燒錄至影片。
+2. **語音合成 (TTS)**：整合微軟 Edge Neural TTS 服務，提供高自然度、零本地 GPU 負擔、完全免費且支援語速/音調調節的繁體中文語音生成功能。
 
 ---
 
-## 搬移專案至新機器 (如 5060 Ti PC) 步驟
+## 專案目錄結構
 
-當您需要將此專案部署到另一台配有高階顯卡 (如 RTX 5060 Ti) 的 Windows 電腦時，請按照以下指南進行遷移與建置：
+```
+Whisper/
+├── docs/                           # 專案文件庫
+│   ├── meetings/                   # 歷次顧問交流會會議紀錄、週報與簡報
+│   ├── manuals/                    # 操作手冊（Timeline 編輯、場景設置、文本申請教學）
+│   └── glossaries/                 # 專有名詞對照庫、本地化指引與術語表
+│
+├── media/                          # 影音多媒體存放區
+│   ├── videos/                     # 原始教學與會議影片 (.mp4)
+│   └── audio/                      # 原始輸入音訊 (.mp3)
+│
+├── data/                           # 專案資料輸出入
+│   ├── input/                      # 待處理字幕或原始文字
+│   ├── output/                     # 最終校正後 .srt 字幕、TTS 合成音訊 (.mp3)
+│   └── audio/                      # 轉檔抽取之中間 .wav 暫存
+│
+├── src/                            # 核心原始程式碼
+│   ├── transcribe_local.py         # Whisper 地端 GPU 轉錄核心
+│   ├── transcribe_api.py           # Gemini 雲端 API 轉錄核心
+│   ├── tts_service.py              # Edge TTS 語音合成核心服務
+│   ├── clean_srt.py                # 字幕清理工具
+│   └── utils/
+│       └── media_utils.py          # 影音抽取與轉換工具
+│
+├── tests/                          # 整合測試腳本集中管理
+│   ├── test_edge_tts.py            # TTS 整合測試
+│   ├── test_workflow.py            # 轉錄工作流測試
+│   └── proofread/                  # 逐字稿校對驗證測試集
+│
+├── run_transcribe.bat / .ps1       # 語音辨識快捷啟動腳本
+├── run_tts.bat / .ps1              # 語音合成快捷啟動腳本
+├── activate.bat / setup.ps1        # 環境初始化與啟用腳本
+├── requirements.txt                # Python 相依套件清單
+├── README.md                       # 專案說明文件
+└── Update.txt                      # 專案更新履歷
+```
 
-### 1. 複製專案檔案 (打包與搬移)
-- 請將本專案目錄（`Whisper/`）打包或透過 Git 複製到新機器。
-- **[重要] 勿複製虛擬環境資料夾**：請**不要**複製 `.venv` 資料夾。新機器必須重新建立專案專屬的 `.venv` 以避免路徑與套件相依性出錯。
+---
 
-### 2. 新機器環境準備 (系統級依賴)
-在新機器執行初始化腳本前，請確保新機器已安裝以下工具：
+## 環境建置與跨機器遷移指南
+
+當您需要將此專案部署到另一台配有獨立顯卡 (如 RTX 5060 Ti / 40 系列) 的 Windows 電腦時，請參閱以下指南：
+
+### 1. 複製專案檔案 (勿複製 `.venv`)
+- **[重要警告] 絕對不要直接複製 `.venv` 目錄**：
+  虛擬環境寫死了當前電腦的絕對路徑、作業系統環境與底層 C/CUDA 編譯二進位檔。複製到其他機器將導致無法啟動或路徑噴錯。
+- **僅需複製**：專案根目錄中的程式碼、腳本與設定（`src/`, `docs/`, `requirements.txt`, `setup.ps1`, `run_*.bat` 等），容量不到 1MB。
+
+### 2. 新機器前置系統工具準備
+在新機器執行初始化前，請確認具備：
 1. **Python 3.10 或 3.11**：
-   - 請至 [Python 官網](https://www.python.org/downloads/) 下載安裝。
-   - 安裝時務必勾選 **"Add Python to PATH"** (將 Python 加入系統環境變數)。
+   - 請至 [Python 官網](https://www.python.org/downloads/) 下載安裝，務必勾選 **"Add Python to PATH"**。
 2. **FFmpeg**：
-   - 請確保新機器已安裝 FFmpeg，且 `ffmpeg` 指令已加入系統環境變數 `PATH` 中。
-   - 您可開啟 PowerShell 輸入 `ffmpeg -version` 進行驗證。
+   - 確保已安裝 FFmpeg 且 `ffmpeg` 已加入系統環境變數 `PATH`（PowerShell 執行 `ffmpeg -version` 可驗證）。
 3. **NVIDIA 顯示卡驅動**：
-   - 請確保已安裝最新的 NVIDIA 官方顯卡驅動，以支援 CUDA 12 運算加速。
+   - 確保安裝最新 NVIDIA 官方驅動以支援 CUDA 硬體加速。
 
-### 3. 一鍵建立虛擬環境與安裝依賴
-在新機器的專案根目錄下，開啟 PowerShell 並執行：
+### 3. 一鍵安裝與自動配置
+在專案根目錄下，開啟 PowerShell 執行：
 
 ```powershell
 # 若遇到 PowerShell 執行策略限制，請先執行此行：
-# Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process
 
+# 一鍵自動建置虛擬環境並安裝所有依賴 (包含 PyTorch CUDA 與 edge-tts)
 .\setup.ps1
 ```
-*此腳本會在新機器上自動建立全新的 `.venv` 虛擬環境，並下載支援 CUDA 12.1 加速的 PyTorch (2.5.1+cu121) 以及 faster-whisper 等核心套件。*
 
-### 4. 啟用環境與自我測試
-環境建置完成後，請在新機器啟用虛擬環境並執行測試腳本：
-
-```powershell
-# 1. 啟用虛擬環境
-.venv\Scripts\Activate.ps1
-
-# 2. 執行自我測試
-python src/test_workflow.py
-```
-*在 5060 Ti 的 PC 上，您應該會看到 `[成功] 載入 tiny 模型` 且最終使用的計算精度為 **`float16`** (不需像 1050 一樣降級到 float32)，這代表 GPU 硬體加速已完美啟動。*
+*(手動安裝方式：`python -m venv .venv` 後執行 `.\.venv\Scripts\pip.exe install -r requirements.txt`)*
 
 ---
 
-## 核心功能執行說明
+## 核心功能使用說明
 
-在新機器啟用虛擬環境 (`.venv\Scripts\Activate.ps1`) 後，即可使用以下功能：
+啟用虛擬環境（`.venv\Scripts\Activate.ps1` 或直接使用根目錄的快捷腳本）後即可操作：
 
-### 1. 地端 GPU 轉錄 (`transcribe_local.py`)
+### 1. Edge TTS 語音合成 (`src/tts_service.py`)
 
-使用 `faster-whisper` 在本機 GPU 上進行語音轉文字，預設針對 5060 Ti 最佳化。
+基於微軟 Edge Neural 在線語音技術，提供高自然度、零本地顯存開銷的語音合成功能。
+
+#### 快捷方式：
+* **雙擊批次檔**：執行根目錄的 `run_tts.bat` 即可快速測試繁中示範音訊。
+* **PowerShell 腳本**：
+  ```powershell
+  # 自訂文字與指定台灣女聲
+  .\run_tts.ps1 -Text "歡迎收聽今天的會議摘要" -Voice "zh-TW-HsiaoChenNeural" -OutputFile "data/output/meeting_intro.mp3"
+
+  # 查詢可用語音清單
+  .\run_tts.ps1 -ListVoices
+  ```
+
+#### Python CLI 命令列進階調用：
+```bash
+# 基礎文字合成
+python src/tts_service.py --text "這是語音合成測試" --output "data/output/speech.mp3"
+
+# 讀取純文字檔合成
+python src/tts_service.py --file "docs/manuals/sample.txt" --output "data/output/manual.mp3"
+
+# 調整語速 (+20%) 與音調 (+5Hz)
+python src/tts_service.py --text "快節奏語音" --rate "+20%" --pitch "+5Hz"
+
+# 查詢所有可用台灣繁體中文音色
+python src/tts_service.py --list-voices
+```
+
+#### 推薦常用音色清單：
+| 音色代碼 (ShortName) | 類型 | 適用場合與特色 |
+|----------------------|------|----------------|
+| `zh-TW-HsiaoChenNeural` | 台灣女聲 (曉臻) | **【首選推薦】** 自然親切、連線極度穩定，適合導讀與教學 |
+| `zh-TW-HsiaoYuNeural` | 台灣女聲 (曉雨) | 活潑清脆、發音清晰，適合短影片與旁白 |
+| `zh-CN-YunxiNeural` | 中文男聲 (雲希) | **【男聲首選】** 熱門旁白男聲，對繁體中文相容極佳、沉穩流暢 |
+| `zh-TW-YunJheNeural` | 台灣男聲 (雲哲) | 台灣腔男聲（已內建微軟端點異常時的自動降級備援機制） |
+
+---
+
+### 2. 地端 GPU 轉錄 (`src/transcribe_local.py`)
+
+使用 `faster-whisper` 在本地 GPU 進行語音轉文字，產出精準帶時間戳的 `.srt` 字幕。
 
 ```bash
-# 基礎用法 ─ 自動掃描 data/input/ 或根目錄內的第一個影片
-python src/transcribe_local.py
+# 快捷執行（自動抓取 media/ 目錄中的影片/音訊）
+.\run_transcribe.bat "0902顧問交流會.mp3"
 
-# 指定影片
-python src/transcribe_local.py --video "您的影片.mp4"
-
-# 完整參數範例 (1050 Ti 建議值)
-python src/transcribe_local.py --video "影片.mp4" --model_size medium --compute_type int8_float16
-
-# 使用 CPU 進行轉錄 (無 GPU 時)
-python src/transcribe_local.py --video "影片.mp4" --device cpu --compute_type float32
-
-# 停用 VAD 語音活動偵測
-python src/transcribe_local.py --video "影片.mp4" --no_vad
+# 或直接透過 Python 執行
+python src/transcribe_local.py --video "media/videos/教學影片.mp4" --model_size large-v3
 ```
 
-| 參數 | 類型 | 預設值 | 說明 |
-|------|------|--------|------|
-| `--video` | `str` | 自動掃描 | 輸入影片路徑 |
-| `--model_size` | `str` | `large-v3` | 模型大小：`tiny`, `base`, `small`, `medium`, `large-v2`, `large-v3` |
-| `--device` | `str` | `cuda` | 執行硬體：`cuda` 或 `cpu` |
-| `--compute_type` | `str` | `float16` | 計算精度：`float16`, `int8_float16`, `int8`, `float32` |
-| `--language` | `str` | `zh` | 辨識語言代碼 |
-| `--no_vad` | flag | 關閉 | 停用 VAD 語音活動偵測 |
-
-*轉錄產出的 `.srt` 字幕檔會自動儲存於 `data/output/` 目錄中。*
+| 常用參數 | 預設值 | 說明 |
+|----------|--------|------|
+| `--video` | 自動掃描 | 輸入影片或音訊路徑 (支援相對路徑與 media/ 自動探測) |
+| `--model_size` | `large-v3` | 模型規格：`tiny`, `base`, `small`, `medium`, `large-v3` |
+| `--device` | `cuda` | 執行運算裝置：`cuda` 或 `cpu` |
+| `--compute_type` | `float16` | 計算精度：`float16` (支援舊卡自動回退降級) |
 
 ---
 
-### 2. 雲端 API 轉錄 (`transcribe_api.py`)
+### 3. 雲端 API 轉錄 (`src/transcribe_api.py`)
 
-使用 Google Gemini API 進行多模態音訊轉錄，適合無 GPU 或需處理超長影片的情境。
-
-**前置準備：** 需先設定 `GEMINI_API_KEY` 環境變數：
+使用 Google Gemini API 進行多模態音訊轉錄，適合無獨立顯卡或長音訊處理：
 
 ```powershell
-# PowerShell
-$env:GEMINI_API_KEY = "您的_API_金鑰"
+$env:GEMINI_API_KEY = "您的_API_KEY"
+python src/transcribe_api.py --video "media/videos/教學影片.mp4"
 ```
-
-```bash
-# 基礎用法 ─ 自動掃描影片
-python src/transcribe_api.py
-
-# 指定影片
-python src/transcribe_api.py --video "您的影片.mp4"
-
-# 指定 Gemini 模型版本
-python src/transcribe_api.py --video "影片.mp4" --model "gemini-2.5-pro"
-```
-
-| 參數 | 類型 | 預設值 | 說明 |
-|------|------|--------|------|
-| `--video` | `str` | 自動掃描 | 輸入影片路徑 |
-| `--model` | `str` | `gemini-2.5-flash` | Gemini 模型版本 |
 
 ---
 
-### 3. 字幕壓制燒錄 (FFmpeg)
-字幕生成後，在新機器直接執行根目錄下的批次檔，即可將字幕壓入影片中：
+### 4. 字幕壓制燒錄 (FFmpeg)
+
+將生成的 `.srt` 字幕以微軟正黑體高品質硬編碼燒錄至影片底部：
 
 ```cmd
-.\burn_subtitles.bat "您的影片.mp4"
+.\burn_subtitles.bat "media/videos/教學影片.mp4"
 ```
-- 字幕檔預設會自動在 `data/output/` 中尋找與影片同名的 `.srt`。
-- 壓制後的影片會儲存在 `data/output/` 下，檔名為 `[原檔名]_subtitled.mp4`。
-- 燒錄樣式預設為：**微軟正黑體 (Microsoft JhengHei)、18px、底部置中、帶有黑色邊框防雜訊**。
 
 ---
 
-## 常見問題排查
+## 測試與驗證
 
-1. **顯卡不支援 float16 / 載入模型失敗：**
-   - 我們的 `transcribe_local.py` 內建**自動降級機制**。如果在其他不支援 float16 的舊機器上執行，它會自動回退使用 `int8_float16` 或 `float32`，不需手動調整程式碼。
-2. **找不到 ffmpeg：**
-   - 請確認新機器已將 `ffmpeg/bin` 資料夾路徑新增至 Windows 的「系統環境變數」中，並重啟終端機使設定生效。
+專案提供完整的自我檢測腳本（位於 `tests/` 目錄），請於終端機執行：
+
+* **TTS 語音合成測試**：
+  ```powershell
+  .\.venv\Scripts\python.exe tests/test_edge_tts.py
+  ```
+  *(驗證繁中女聲、男聲、微調參數及雲端容錯機制)*
+
+* **轉錄工作流程測試**：
+  ```powershell
+  .\.venv\Scripts\python.exe tests/test_workflow.py
+  ```

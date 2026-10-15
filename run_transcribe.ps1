@@ -1,18 +1,28 @@
 # Whisper 語音轉文字 PowerShell 腳本
 param(
-    [string]$VideoPath = "D:\Temp\2026_08_12_19_03_14_462.mp4"
+    [string]$VideoPath = "0902顧問交流會.mp3"
 )
 
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 if (-not $ScriptDir) { $ScriptDir = Get-Location }
 Set-Location $ScriptDir
 
+# 自動解析路徑 (相容根目錄、media/audio、media/videos)
+$ResolvedPath = $VideoPath
+if (-not (Test-Path $ResolvedPath)) {
+    if (Test-Path "$ScriptDir\media\audio\$VideoPath") {
+        $ResolvedPath = "$ScriptDir\media\audio\$VideoPath"
+    } elseif (Test-Path "$ScriptDir\media\videos\$VideoPath") {
+        $ResolvedPath = "$ScriptDir\media\videos\$VideoPath"
+    }
+}
+
 Write-Host "==================================================" -ForegroundColor Cyan
 Write-Host "  Whisper 專案 - 語音轉文字作業" -ForegroundColor Cyan
-Write-Host "  目標影片: $VideoPath" -ForegroundColor Yellow
+Write-Host "  目標影片/音訊: $ResolvedPath" -ForegroundColor Yellow
 Write-Host "==================================================" -ForegroundColor Cyan
 
-& "$ScriptDir\.venv\Scripts\python.exe" "$ScriptDir\src\transcribe_local.py" --video "$VideoPath"
+& "$ScriptDir\.venv\Scripts\python.exe" "$ScriptDir\src\transcribe_local.py" --video "$ResolvedPath"
 
 if ($LASTEXITCODE -eq 0) {
     Write-Host "`n[成功] 轉錄作業順利完成！" -ForegroundColor Green

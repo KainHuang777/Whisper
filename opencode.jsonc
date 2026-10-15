@@ -5,9 +5,30 @@
   "provider": {
     "skyunion": {
       "npm": "@ai-sdk/openai-compatible",
-      "name": "第三方API",
+      "name": "SkyUnion API",
       "options": {
-        "baseURL": "https://crs.skyunion.net/v1"
+        "baseURL": "https://crs.skyunion.net/v1",
+        "apiKey": "sk-pwEJSy7hphPcUEj9vmMrvQbkpYoB6YiqhArpEh4q3kZ6BX31"
+      },
+      "models": {
+        // ═══ Claude 系列（aws） ═══
+        "claude-opus-5":              { "name": "Claude Opus 5" },
+        "claude-opus-4-8":            { "name": "Claude Opus 4.8" },
+        "claude-haiku-4-5-20251001":  { "name": "Claude Haiku 4.5" },
+        "claude-sonnet-5":            { "name": "Claude Sonnet 5" },
+        // ═══ GPT 系列（azure） ═══
+        "gpt-5.6-sol":                { "name": "GPT-5.6 Sol" },
+        "gpt-5.6-luna":               { "name": "GPT-5.6 Luna" },
+        "gpt-5.6-terra":              { "name": "GPT-5.6 Terra" },
+        "gpt-5.5":                    { "name": "GPT-5.5" },
+        "gpt-5.4":                    { "name": "GPT-5.4" },
+        "gpt-5.3-codex":              { "name": "GPT-5.3 Codex" },
+        "gpt-5.2":                    { "name": "GPT-5.2" },
+        "gpt-4.1-mini":               { "name": "GPT-4.1 Mini" },
+        // ═══ DeepSeek 系列 ═══
+        "azure-ds-v4-pro":            { "name": "DeepSeek V4 Pro (Azure)" },
+        "azure-ds-v4-flash":          { "name": "DeepSeek V4 Flash (Azure)" },
+        "deepseek-v4-flash":          { "name": "DeepSeek V4 Flash (Volcengine)" }
       }
     }
   },
@@ -54,13 +75,13 @@
       "mode": "subagent",
       "model": "skyunion/claude-haiku-4-5-20251001",
       "hidden": true,
-      "description": "Fusion panel: Claude Haiku 4.5 (第三方API) — Anthropic architecture diversity, nuanced reasoning, safety perspective"
+      "description": "Fusion panel: Claude Haiku 4.5 (SkyUnion API) — Anthropic architecture diversity, nuanced reasoning, safety perspective"
     },
     "fusion-sonnet": {
       "mode": "subagent",
       "model": "skyunion/claude-sonnet-5",
       "hidden": true,
-      "description": "Fusion panel: Claude Sonnet 5 (第三方API) — Anthropic flagship, deep contextual reasoning, safety alignment"
+      "description": "Fusion panel: Claude Sonnet 5 (SkyUnion API) — Anthropic flagship, deep contextual reasoning, safety alignment"
     },
 
     "fusion-budget-ds": {
